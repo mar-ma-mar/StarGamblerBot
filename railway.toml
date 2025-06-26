@@ -1,0 +1,6 @@
+[build]
+root = "webapp"
+builder = "static"
+
+[deploy]
+command = ""
