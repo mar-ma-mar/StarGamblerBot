@@ -1,6 +1,5 @@
 [build]
 root = "webapp"
-builder = "staticfile"
 
 [deploy]
 command = ""
