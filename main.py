@@ -103,4 +103,17 @@ async def more_info(callback_query: types.CallbackQuery):
 async def help_handler(callback_query: types.CallbackQuery):
     await bot.send_message(callback_query.from_user.id,
                            "ℹ️ *Помощь*\n\n"
-                           "/s"
+                           "/start — Запустить бота\n"
+                           "Нажмите «📋 Список событий» — чтобы просмотреть текущие события для ставок\n"
+                           "Выберите Да или Нет для каждого события\n"
+                           "Нажмите «ℹ️ Подробнее» для дополнительной информации\n\n"
+                           "Ваши голоса сохраняются и отображаются после выбора.",
+                           parse_mode="Markdown")
+    await bot.answer_callback_query(callback_query.id)
+
+@dp.callback_query_handler(lambda c: c.data == "noop")
+async def noop_handler(callback_query: types.CallbackQuery):
+    await bot.answer_callback_query(callback_query.id)
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
