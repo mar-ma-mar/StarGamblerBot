@@ -1,12 +1,19 @@
 import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from aiogram.utils import executor
+from aiogram.utils.executor import start_webhook
 from dotenv import load_dotenv
+from aiohttp import web
 
-# Загрузка переменных окружения из .env
+# Загрузка .env переменных
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_HOST = os.getenv("WEBHOOK_URL")  # https://your-project.railway.app
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+
+WEBAPP_HOST = '0.0.0.0'
+WEBAPP_PORT = int(os.getenv("PORT", 8000))
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
@@ -30,11 +37,11 @@ events = [
     },
 ]
 
-# Клавиатура для стартового меню с двумя кнопками
+# Кнопки
 start_keyboard = InlineKeyboardMarkup(row_width=2).add(
     InlineKeyboardButton(
         text="🧠 Сделать ставку",
-        web_app=WebAppInfo(url="https://funny-biscuit-ccf218.netlify.app") 
+        web_app=WebAppInfo(url="https://funny-biscuit-ccf218.netlify.app")
     ),
     InlineKeyboardButton(
         text="📅 Показать события",
@@ -45,8 +52,7 @@ start_keyboard = InlineKeyboardMarkup(row_width=2).add(
 @dp.message_handler(commands=['start'])
 async def start_handler(message: types.Message):
     await message.answer(
-        "👋 Добро пожаловать в *Ставь на Будущее*!\n\n"
-        "Выбери действие ниже:",
+        "👋 Добро пожаловать в *Ставь на Будущее*!\n\nВыбери действие ниже:",
         parse_mode="Markdown",
         reply_markup=start_keyboard
     )
@@ -90,5 +96,20 @@ async def more_info(callback_query: types.CallbackQuery):
         )
     await bot.answer_callback_query(callback_query.id)
 
+async def on_startup(dp):
+    await bot.set_webhook(WEBHOOK_URL)
+
+async def on_shutdown(dp):
+    await bot.delete_webhook()
+
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    start_webhook(
+        dispatcher=dp,
+        webhook_path=WEBHOOK_PATH,
+        on_startup=on_startup,
+        on_shutdown=on_shutdown,
+        skip_updates=True,
+        host=WEBAPP_HOST,
+        port=WEBAPP_PORT,
+    )
+
