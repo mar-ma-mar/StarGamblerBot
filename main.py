@@ -103,4 +103,4 @@ async def more_info(callback_query: types.CallbackQuery):
 async def help_handler(callback_query: types.CallbackQuery):
     await bot.send_message(callback_query.from_user.id,
                            "ℹ️ *Помощь*\n\n"
-                           "/s
+                           "/s"
