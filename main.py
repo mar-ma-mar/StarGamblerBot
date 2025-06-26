@@ -11,14 +11,6 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
-# Кнопка для открытия WebApp
-webapp_keyboard = InlineKeyboardMarkup().add(
-    InlineKeyboardButton(
-        text="🧠 Сделать ставку",
-        web_app=WebAppInfo(url="https://funny-biscuit-ccf218.netlify.app")
-    )
-)
-
 # Список событий
 events = [
     {
@@ -38,35 +30,52 @@ events = [
     },
 ]
 
+# Клавиатура для стартового меню с двумя кнопками
+start_keyboard = InlineKeyboardMarkup(row_width=2).add(
+    InlineKeyboardButton(
+        text="🧠 Сделать ставку",
+        web_app=WebAppInfo(url="https://funny-biscuit-ccf218.netlify.app") 
+    ),
+    InlineKeyboardButton(
+        text="📅 Показать события",
+        callback_data="show_events"
+    )
+)
+
 @dp.message_handler(commands=['start'])
 async def start_handler(message: types.Message):
     await message.answer(
-        "👋 Добро пожаловать в *Ставь на Будущее*!\n\nЖми на кнопку ниже:",
+        "👋 Добро пожаловать в *Ставь на Будущее*!\n\n"
+        "Выбери действие ниже:",
         parse_mode="Markdown",
-        reply_markup=webapp_keyboard
+        reply_markup=start_keyboard
     )
 
 @dp.callback_query_handler(lambda c: c.data == "show_events")
 async def show_events(callback_query: types.CallbackQuery):
     for event in events:
-        keyboard = InlineKeyboardMarkup()
+        keyboard = InlineKeyboardMarkup(row_width=3)
         keyboard.add(
             InlineKeyboardButton("✅ Да", callback_data=f"vote:{event['id']}:yes"),
             InlineKeyboardButton("❌ Нет", callback_data=f"vote:{event['id']}:no"),
             InlineKeyboardButton("ℹ️ Подробнее", callback_data=f"more:{event['id']}")
         )
-        await bot.send_message(callback_query.from_user.id,
-                               f"*{event['title']}*\n\n{event['desc']}",
-                               parse_mode="Markdown",
-                               reply_markup=keyboard)
+        await bot.send_message(
+            callback_query.from_user.id,
+            f"*{event['title']}*\n{event['desc']}",
+            parse_mode="Markdown",
+            reply_markup=keyboard
+        )
     await bot.answer_callback_query(callback_query.id)
 
 @dp.callback_query_handler(lambda c: c.data.startswith("vote:"))
 async def handle_vote(callback_query: types.CallbackQuery):
     _, event_id, choice = callback_query.data.split(":")
-    answer = "✅ Ты выбрал 'Да'" if choice == "yes" else "❌ Ты выбрал 'Нет'"
-    await bot.send_message(callback_query.from_user.id, f"Спасибо за ставку на событие `{event_id}`!\n{answer}",
-                           parse_mode="Markdown")
+    await bot.send_message(
+        callback_query.from_user.id,
+        f"Вы проголосовали:\nСобытие: `{event_id}`\nВаш выбор: {'Да' if choice == 'yes' else 'Нет'}",
+        parse_mode="Markdown"
+    )
     await bot.answer_callback_query(callback_query.id)
 
 @dp.callback_query_handler(lambda c: c.data.startswith("more:"))
@@ -74,8 +83,11 @@ async def more_info(callback_query: types.CallbackQuery):
     event_id = callback_query.data.split(":")[1]
     event = next((e for e in events if e["id"] == event_id), None)
     if event:
-        await bot.send_message(callback_query.from_user.id, f"📄 *Подробности:*\n\n{event['desc']}",
-                               parse_mode="Markdown")
+        await bot.send_message(
+            callback_query.from_user.id,
+            f"📄 *Подробности о событии {event_id}*\n\n{event['desc']}\n\n_Пока информации немного, но скоро будет больше!_",
+            parse_mode="Markdown"
+        )
     await bot.answer_callback_query(callback_query.id)
 
 if __name__ == '__main__':
